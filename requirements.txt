@@ -3,3 +3,8 @@ numpy
 matplotlib
 scikit-learn
 streamlit
+
+pandas
+kagglehub
+openpyxl
+nba_api

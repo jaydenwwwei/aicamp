@@ -97,11 +97,136 @@ The controller is innocent, the plan was brave, and the replay will judge us all
 
 
 SINGLE_CHATBOT_CORPUSES = {
-    "Pride and Prejudice fallback": FALLBACK_CORPUS,
     "Goofy banana comedy sample": BANANA_CREW_CORPUS,
     "Gaming stream banter sample": GAMING_STREAM_CORPUS,
+    "Pride and Prejudice sample": FALLBACK_CORPUS,
     "Custom pasted text": "",
 }
+
+
+BANANA_STYLE = """
+<style>
+    .stApp {
+        background: linear-gradient(135deg, #fff8c6 0%, #ffe66d 45%, #f7c948 100%);
+    }
+    [data-testid="stSidebar"] {
+        background: #fff3a3;
+    }
+    h1, h2, h3 {
+        color: #5c3b00;
+    }
+    .banana-card {
+        background: rgba(255, 255, 255, 0.72);
+        border: 2px solid #d6a900;
+        border-radius: 18px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 1rem;
+        color: #3d2a00;
+    }
+    .banana-hero {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin: 0.5rem 0 1.2rem;
+    }
+    .banana-hero svg {
+        max-width: 220px;
+        height: auto;
+        filter: drop-shadow(0 8px 8px rgba(92, 59, 0, 0.22));
+    }
+    .banana-dance-floor {
+        display: flex;
+        justify-content: center;
+        gap: 1.2rem;
+        flex-wrap: wrap;
+        margin: 0.5rem 0 1.2rem;
+        padding: 0.8rem;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.38);
+        border: 2px dashed #c89400;
+    }
+    .dancing-banana {
+        display: inline-block;
+        font-size: 4rem;
+        animation: banana-dance 0.75s infinite ease-in-out alternate;
+        transform-origin: bottom center;
+    }
+    .dancing-banana:nth-child(2) {
+        animation-delay: 0.15s;
+    }
+    .dancing-banana:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+    .dancing-banana:nth-child(4) {
+        animation-delay: 0.45s;
+    }
+    .jynxzi-emoji {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        background: #1f1f1f;
+        color: #ffe66d;
+        border: 2px solid #ffe66d;
+        border-radius: 999px;
+        padding: 0.45rem 0.9rem;
+        font-weight: 800;
+        box-shadow: 0 6px 0 #8a6500;
+        margin: 0 auto 1rem;
+    }
+    .jynxzi-face {
+        font-size: 1.8rem;
+        animation: jynxzi-pop 0.9s infinite alternate ease-in-out;
+    }
+    @keyframes banana-dance {
+        0% {
+            transform: translateY(0) rotate(-12deg) scaleX(1.03);
+        }
+        50% {
+            transform: translateY(-16px) rotate(8deg) scaleX(0.94);
+        }
+        100% {
+            transform: translateY(4px) rotate(16deg) scaleX(1.06);
+        }
+    }
+    @keyframes jynxzi-pop {
+        from {
+            transform: scale(1) rotate(-4deg);
+        }
+        to {
+            transform: scale(1.16) rotate(5deg);
+        }
+    }
+</style>
+"""
+
+
+BANANA_SVG = """
+<svg viewBox="0 0 220 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="banana illustration">
+    <path d="M28 80 C78 128, 161 126, 197 49 C170 80, 89 91, 45 52 C40 64, 35 73, 28 80 Z" fill="#ffd83d" stroke="#6b4700" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M45 52 C87 86, 163 78, 197 49 C168 98, 85 112, 28 80" fill="none" stroke="#f2b705" stroke-width="9" stroke-linecap="round"/>
+    <path d="M194 48 C204 39, 205 31, 198 25" fill="none" stroke="#5c3b00" stroke-width="9" stroke-linecap="round"/>
+    <path d="M43 53 C35 45, 28 44, 22 49" fill="none" stroke="#5c3b00" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="91" cy="71" r="5" fill="#6b4700"/>
+    <circle cx="130" cy="72" r="5" fill="#6b4700"/>
+    <path d="M102 91 C113 100, 130 99, 141 90" fill="none" stroke="#6b4700" stroke-width="5" stroke-linecap="round"/>
+</svg>
+"""
+
+
+BANANA_BUNCH_SVG = """
+<svg viewBox="0 0 240 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="banana bunch illustration">
+    <path d="M121 34 C83 45, 56 79, 45 122 C91 99, 121 75, 136 36 Z" fill="#ffe45c" stroke="#6b4700" stroke-width="5"/>
+    <path d="M132 35 C112 69, 113 109, 134 142 C157 101, 158 64, 142 34 Z" fill="#ffd12f" stroke="#6b4700" stroke-width="5"/>
+    <path d="M143 39 C154 72, 180 101, 216 116 C204 73, 180 46, 149 31 Z" fill="#ffdc45" stroke="#6b4700" stroke-width="5"/>
+    <path d="M116 32 C123 21, 137 21, 148 32" fill="none" stroke="#4a3100" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="105" cy="82" r="4" fill="#6b4700"/>
+    <circle cx="132" cy="80" r="4" fill="#6b4700"/>
+    <circle cx="161" cy="81" r="4" fill="#6b4700"/>
+    <path d="M97 102 C114 114, 139 113, 154 101" fill="none" stroke="#6b4700" stroke-width="5" stroke-linecap="round"/>
+</svg>
+"""
 
 
 def sanitize_text(text):
@@ -186,10 +311,50 @@ def generate_bot_conversation(bot_one_text, bot_two_text, order, turns, max_word
 
 
 def main():
-    st.set_page_config(page_title="Markov Chatbot", page_icon="M", layout="wide")
+    st.set_page_config(page_title="Banana Markov Chatbot", page_icon="B", layout="wide")
+    st.markdown(BANANA_STYLE, unsafe_allow_html=True)
 
-    st.title("Markov Chain Chatbot")
-    st.write("Chat with a local Markov bot. Paste training text, or leave it empty to use Pride and Prejudice as the fallback corpus.")
+    st.title("Banana Markov Chatbot")
+    st.markdown(
+        f"""
+        <div class="banana-hero">
+            {BANANA_SVG}
+            {BANANA_BUNCH_SVG}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div style="display:flex; justify-content:center;">
+            <div class="jynxzi-emoji">
+                <span class="jynxzi-face">🎮😤</span>
+                <span>Jynxzi Mode</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="banana-dance-floor" aria-label="dancing banana animations">
+            <span class="dancing-banana">🍌</span>
+            <span class="dancing-banana">🍌</span>
+            <span class="dancing-banana">🍌</span>
+            <span class="dancing-banana">🍌</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="banana-card">
+        Welcome to the banana lab. Chat with a local Markov bot, or make two banana-flavored bots talk to each other.
+        Paste training text if you want, or leave it empty to use the built-in banana comedy corpus.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -200,11 +365,11 @@ def main():
 
     with st.sidebar:
         st.header("Settings")
-        mode = st.radio("Mode", ["Single chatbot", "Two funny bots"])
+        mode = st.radio("Mode", ["Single banana bot", "Two banana bots"])
         order = st.number_input("Markov order", min_value=1, max_value=20, value=2, step=1)
         max_words = st.number_input("Max words per reply", min_value=5, max_value=200, value=40, step=5)
         turns = 10
-        if mode == "Two funny bots":
+        if mode == "Two banana bots":
             turns = st.number_input("Conversation turns", min_value=2, max_value=50, value=10, step=2)
         use_seed = st.checkbox("Use random seed")
         seed = None
@@ -216,8 +381,8 @@ def main():
             st.session_state.reply_count = 0
             st.rerun()
 
-    if mode == "Two funny bots":
-        st.subheader("Two Funny Bots")
+    if mode == "Two banana bots":
+        st.subheader("Two Banana Bots")
         st.write("Banana Crew and Stream Goblin take turns talking using separate Markov chains.")
 
         with st.expander("Customize bot corpuses"):
@@ -258,18 +423,18 @@ def main():
         "Optional training text",
         value=selected_corpus,
         height=220,
-        placeholder="Paste text here, or leave empty to use Pride and Prejudice.",
-        help="Choose a built-in sample or paste your own text. If empty, the app uses Pride and Prejudice.",
+        placeholder="Paste text here, or leave empty to use the banana comedy fallback.",
+        help="Choose a built-in sample or paste your own text. If empty, the app uses the banana comedy corpus.",
     )
 
-    raw_training_text = sample_text.strip() or FALLBACK_CORPUS
+    raw_training_text = sample_text.strip() or BANANA_CREW_CORPUS
     training_text = sanitize_text(raw_training_text)
     using_fallback = not sample_text.strip()
     raw_token_count = len(tokenize(raw_training_text))
     token_count = len(tokenize(training_text))
 
     if using_fallback:
-        st.info("Using fallback corpus: Pride and Prejudice.")
+        st.info("Using fallback corpus: Goofy banana comedy sample.")
     elif corpus_choice != "Custom pasted text":
         st.info(f"Using built-in training sample: {corpus_choice}.")
 
