@@ -5,3 +5,4 @@ Pillow>=10
 numpy>=2
 transformers>=4.50
 safetensors>=0.5
+kagglehub>=0.3
