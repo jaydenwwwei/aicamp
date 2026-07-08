@@ -23,6 +23,24 @@ To continue training on top of the best existing checkpoint, run:
 
 Resume mode unfreezes the complete network and uses one tenth of the normal learning rate. It restores model weights and training history, but starts a fresh optimizer so no unsafe pickle-based optimizer artifact is needed.
 
+## Live human-to-Lego matcher
+
+Run the separate webcam matcher with:
+
+```powershell
+& ".\.venv\Scripts\python.exe" "Day 3\live_matcher.py"
+```
+
+The first launch uses CLIP to build one visual prototype for each of the 38 Lego identities. It removes exact duplicate images and caches the result in `artifacts/lego_match_index.safetensors`. Later launches reuse that index.
+
+To build or rebuild the index without opening the camera, use:
+
+```powershell
+& ".\.venv\Scripts\python.exe" "Day 3\live_matcher.py" --rebuild-index --build-index-only
+```
+
+The camera stays live while matching happens in a background thread. The side panel shows the top three visual matches and their reference images. Press `Q` to quit, `S` to save the current result, or `R` to rebuild the Lego index. Similarity is a playful visual comparison, not facial recognition or identity confidence.
+
 The default dataset location is:
 
 ```text
