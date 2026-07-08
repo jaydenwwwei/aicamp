@@ -25,6 +25,7 @@ from sportballs import (  # noqa: E402
     odd_one_index,
     open_rgb_image,
     predict_round,
+    round_result_message,
     train_online_round,
     warmup_model,
 )
@@ -94,6 +95,29 @@ class SportsBallTests(unittest.TestCase):
         self.assertTrue(recycled.recycled_pool)
         self.assertEqual(len(used), 4)
 
+    def test_hard_round_uses_a_confusing_class_pair(self):
+        class_names = ["american_football", "rugby_ball", "shuttlecock"]
+        records = [
+            ImageRecord(
+                Path(f"{class_name}_{index}.jpg"),
+                f"{class_name}_{index}",
+                label,
+                class_name,
+            )
+            for label, class_name in enumerate(class_names)
+            for index in range(6)
+        ]
+        game_round = build_round(
+            records,
+            set(),
+            seed=11,
+            round_number=0,
+            hard_mode=True,
+        )
+        chosen_classes = {record.class_name for record in game_round.records}
+        self.assertEqual(chosen_classes, {"american_football", "rugby_ball"})
+        self.assertTrue(game_round.hard_mode)
+
     def test_odd_scoring_finds_distinct_probability_distribution(self):
         probabilities = torch.tensor(
             [
@@ -106,6 +130,16 @@ class SportsBallTests(unittest.TestCase):
         prediction, scores = odd_one_index(probabilities)
         self.assertEqual(prediction, 3)
         self.assertGreater(scores[3], max(scores[:3]))
+
+    def test_result_message_shows_player_and_model_answers(self):
+        self.assertEqual(
+            round_result_message(player_choice=2, model_choice=3, correct_choice=3),
+            "You: Wrong    |    Model: Correct",
+        )
+        self.assertEqual(
+            round_result_message(player_choice=1, model_choice=0, correct_choice=1),
+            "You: Correct    |    Model: Wrong",
+        )
 
     def test_unreadable_image_has_clear_error(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -27,10 +27,25 @@ DEFAULT_ARTIFACT_DIR = SCRIPT_DIR / "artifacts" / "sportsball_game"
 DATASET_HANDLE = "samuelcortinhas/sports-balls-multiclass-image-classification"
 EXPECTED_CLASS_COUNT = 15
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+HARD_CLASS_GROUPS = (
+    frozenset({"american_football", "rugby_ball"}),
+    frozenset({"baseball", "cricket_ball"}),
+    frozenset({"tennis_ball", "table_tennis_ball"}),
+    frozenset({"hockey_ball", "hockey_puck"}),
+    frozenset({"football", "volleyball", "basketball"}),
+    frozenset({"golf_ball", "billiard_ball", "bowling_ball"}),
+)
 
 
 def display_name(class_name: str) -> str:
     return class_name.replace("_", " ").title()
+
+
+def round_result_message(player_choice: int, model_choice: int, correct_choice: int) -> str:
+    """Describe both players' results without exposing training details."""
+    player_result = "Correct" if player_choice == correct_choice else "Wrong"
+    model_result = "Correct" if model_choice == correct_choice else "Wrong"
+    return f"You: {player_result}    |    Model: {model_result}"
 
 
 @dataclass(frozen=True)
@@ -56,6 +71,7 @@ class GameRound:
     majority_label: int
     odd_label: int
     recycled_pool: bool = False
+    hard_mode: bool = False
 
 
 @dataclass
@@ -152,6 +168,7 @@ def build_round(
     seed: int,
     round_number: int,
     pool_cycle: int = 0,
+    hard_mode: bool = False,
 ) -> GameRound:
     """Create a deterministic 3+1 round, clearing an exhausted pool when needed."""
     rng = random.Random(seed + round_number * 1_000_003 + pool_cycle * 97_409)
@@ -163,34 +180,47 @@ def build_round(
                 grouped.setdefault(record.label, []).append(record)
         return grouped
 
+    class_by_label = {record.label: record.class_name for record in records}
+
+    def possible_odd_labels(majority_label: int, grouped: dict[int, list[ImageRecord]]) -> list[int]:
+        candidates = [
+            label for label, items in grouped.items() if label != majority_label and items
+        ]
+        if not hard_mode:
+            return sorted(candidates)
+        majority_class = class_by_label[majority_label]
+        hard_neighbors = next(
+            (group - {majority_class} for group in HARD_CLASS_GROUPS if majority_class in group),
+            frozenset(),
+        )
+        return sorted(label for label in candidates if class_by_label[label] in hard_neighbors)
+
+    def possible_majorities(grouped: dict[int, list[ImageRecord]]) -> list[int]:
+        return sorted(
+            label
+            for label, items in grouped.items()
+            if len(items) >= 3 and possible_odd_labels(label, grouped)
+        )
+
     grouped = available_by_label()
-    majority_labels = [label for label, items in grouped.items() if len(items) >= 3]
-    valid_majorities = [
-        label
-        for label in majority_labels
-        if any(other != label and items for other, items in grouped.items())
-    ]
+    valid_majorities = possible_majorities(grouped)
     recycled = False
     if not valid_majorities:
         used_keys.clear()
         grouped = available_by_label()
-        valid_majorities = [
-            label
-            for label, items in grouped.items()
-            if len(items) >= 3 and any(other != label and other_items for other, other_items in grouped.items())
-        ]
+        valid_majorities = possible_majorities(grouped)
         recycled = True
     if not valid_majorities:
         raise ValueError("The game pool cannot make a round with three matching and one odd image.")
 
     majority_label = rng.choice(sorted(valid_majorities))
-    odd_labels = sorted(label for label, items in grouped.items() if label != majority_label and items)
+    odd_labels = possible_odd_labels(majority_label, grouped)
     odd_label = rng.choice(odd_labels)
     chosen = rng.sample(grouped[majority_label], 3) + [rng.choice(grouped[odd_label])]
     rng.shuffle(chosen)
     odd_index = next(index for index, record in enumerate(chosen) if record.label == odd_label)
     used_keys.update(record.key for record in chosen)
-    return GameRound(tuple(chosen), odd_index, majority_label, odd_label, recycled)
+    return GameRound(tuple(chosen), odd_index, majority_label, odd_label, recycled, hard_mode)
 
 
 def evaluation_transform() -> transforms.Compose:
@@ -463,6 +493,7 @@ class SportsBallGame:
         self.current_round: GameRound | None = None
         self.current_prediction: int | None = None
         self.result_message = ""
+        self.hard_mode = False
         self.photos: list[ImageTk.PhotoImage] = []
         self.buttons: list = []
         self.closed = False
@@ -470,8 +501,8 @@ class SportsBallGame:
         if reset:
             self.store.reset()
         self.root.title("Sports-Ball Odd One Out")
-        self.root.geometry("760x620")
-        self.root.minsize(700, 580)
+        self.root.geometry("800x720")
+        self.root.minsize(740, 680)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.container = tk.Frame(root, padx=18, pady=14)
         self.container.pack(fill="both", expand=True)
@@ -486,6 +517,21 @@ class SportsBallGame:
             wraplength=680,
         )
         self.status.pack(pady=(0, 10))
+        self.mode_button = tk.Button(
+            self.container,
+            text="Mode: Normal  •  Click for Hard",
+            font=("Segoe UI", 11, "bold"),
+            foreground="#245c2a",
+            command=self.toggle_hard_mode,
+        )
+        self.mode_button.pack(pady=(0, 7))
+        self.score_label = tk.Label(
+            self.container,
+            text="You: 0/0    |    Model: 0/0",
+            font=("Segoe UI", 11, "bold"),
+            foreground="#3949ab",
+        )
+        self.score_label.pack(pady=(0, 8))
         self.grid = tk.Frame(self.container)
         self.grid.pack(expand=True)
         self.next_button = tk.Button(
@@ -506,6 +552,35 @@ class SportsBallGame:
     def set_status_from_worker(self, text: str) -> None:
         if not self.closed:
             self.root.after(0, lambda: self.status.config(text=text) if not self.closed else None)
+
+    def update_scoreboard(self) -> None:
+        if self.state is None:
+            self.score_label.config(text="You: 0/0    |    Model: 0/0")
+            return
+        rounds = self.state.round_count
+        self.score_label.config(
+            text=(
+                f"You: {self.state.human_correct}/{rounds}    |    "
+                f"Model: {self.state.model_correct}/{rounds}"
+            )
+        )
+
+    def toggle_hard_mode(self) -> None:
+        self.hard_mode = not self.hard_mode
+        if self.hard_mode:
+            self.mode_button.config(
+                text="Mode: HARD  •  Click for Normal",
+                foreground="#a52a2a",
+            )
+            message = "Hard mode enabled: the next round uses similar-looking sports objects."
+        else:
+            self.mode_button.config(
+                text="Mode: Normal  •  Click for Hard",
+                foreground="#245c2a",
+            )
+            message = "Normal mode enabled for the next round."
+        if self.current_round is None:
+            self.status.config(text=message)
 
     def run_worker(self, operation: Callable, success: Callable) -> None:
         def target():
@@ -558,7 +633,10 @@ class SportsBallGame:
     def prepare_next_round(self) -> None:
         self.next_button.pack_forget()
         self.clear_grid()
-        self.status.config(text="Choosing four pictures and asking the model...")
+        self.current_round = None
+        selected_hard_mode = self.hard_mode
+        mode_name = "hard" if selected_hard_mode else "normal"
+        self.status.config(text=f"Choosing a {mode_name} round and asking the model...")
 
         def prepare():
             assert self.layout and self.model and self.state
@@ -569,6 +647,7 @@ class SportsBallGame:
                 self.state.seed,
                 self.state.round_count,
                 self.state.pool_cycle,
+                selected_hard_mode,
             )
             if game_round.recycled_pool:
                 self.state.pool_cycle += 1
@@ -589,7 +668,11 @@ class SportsBallGame:
         game_round, prediction, pictures = result
         self.current_round = game_round
         self.current_prediction = prediction
-        self.status.config(text="Which picture is the odd one out? Click it!")
+        self.update_scoreboard()
+        prompt = "Which picture is the odd one out? Click it!"
+        if game_round.hard_mode:
+            prompt += "  (HARD: these sports objects are deliberately similar.)"
+        self.status.config(text=prompt)
         for index, picture in enumerate(pictures):
             fitted = ImageOps.contain(picture, self.IMAGE_BOX)
             background = Image.new("RGB", self.IMAGE_BOX, "white")
@@ -610,27 +693,48 @@ class SportsBallGame:
                 highlightbackground="#d0d0d0",
                 highlightcolor="#d0d0d0",
                 cursor="hand2",
+                compound="top",
+                font=("Segoe UI", 10, "bold"),
+                text="",
             )
             button.grid(row=index // 2, column=index % 2, padx=8, pady=8)
             self.buttons.append(button)
 
     def select_image(self, selected: int) -> None:
-        if self.current_round is None or self.state is None:
+        if self.current_round is None or self.current_prediction is None or self.state is None:
             return
         correct = self.current_round.odd_index
-        for button in self.buttons:
+        model_choice = self.current_prediction
+        for index, button in enumerate(self.buttons):
             button.config(state="disabled", cursor="")
-        self.buttons[correct].config(highlightbackground="#2e9d48", highlightcolor="#2e9d48")
-        if selected != correct:
-            self.buttons[selected].config(highlightbackground="#c63c3c", highlightcolor="#c63c3c")
-        self.result_message = (
-            "Correct!" if selected == correct else "Not quite — the green picture is the odd one."
-        )
-        self.status.config(text=self.result_message)
+            labels: list[str] = []
+            if index == correct:
+                labels.append("Correct")
+            if index == selected:
+                labels.append("You")
+            if index == model_choice:
+                labels.append("Model")
+            button.config(text=" • ".join(labels))
+
+            if index == correct:
+                color = "#2e9d48"  # green: true odd image
+            elif index == selected and index == model_choice:
+                color = "#ef6c00"  # orange: both chose the same wrong image
+            elif index == selected:
+                color = "#c63c3c"  # red: player's wrong choice
+            elif index == model_choice:
+                color = "#7e57c2"  # purple: model's wrong choice
+            else:
+                color = "#d0d0d0"
+            button.config(highlightbackground=color, highlightcolor=color)
+
+        self.result_message = round_result_message(selected, model_choice, correct)
+        self.status.config(text=self.result_message + "\nThe model is learning from this round...")
 
         self.state.round_count += 1
         self.state.human_correct += int(selected == correct)
         self.state.model_correct += int(self.current_prediction == correct)
+        self.update_scoreboard()
         for record in self.current_round.records:
             if record.key not in self.state.replay_images:
                 self.state.replay_images.append(record.key)
@@ -639,7 +743,6 @@ class SportsBallGame:
 
     def learn_and_save(self) -> float:
         assert self.layout and self.model and self.optimizer and self.state and self.current_round
-        self.set_status_from_worker("Learning from this round...")
         record_index = {record.key: record for record in self.layout.game_records}
         current_keys = {record.key for record in self.current_round.records}
         earlier_replay = [key for key in self.state.replay_images if key not in current_keys]
@@ -654,7 +757,7 @@ class SportsBallGame:
         return loss
 
     def training_finished(self, _loss: float) -> None:
-        self.status.config(text=self.result_message)
+        self.status.config(text=self.result_message + "\nThe model learned from these pictures.")
         self.next_button.pack(pady=(8, 0))
 
     def show_error(self, error: Exception) -> None:

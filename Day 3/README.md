@@ -57,9 +57,15 @@ Manual review is not required. If you ever choose to run `label_dataset.py --rev
 
 `sportballs.py` downloads (or reuses) the 15-class sports-ball dataset and opens a
 four-picture desktop game. Three pictures show the same kind of sports object and
-one is different. The model makes its own choice before you click, then learns from
-the four real folder labels after the answer is revealed. Your click is never used
-as a training label.
+one is different. The model secretly makes its own choice before you click. After
+your answer, the grid labels the correct picture, your pick, and the model's pick;
+the scoreboard tracks both players. The model then learns from the four real folder
+labels. Your click is never used as a training label.
+
+Use the **Mode** button above the pictures to switch between Normal and Hard. Hard
+mode keeps four pictures but chooses the odd image from a deliberately similar
+class: for example rugby versus American football, baseball versus cricket, or
+tennis versus table tennis. The selected mode applies to the next round.
 
 Install the requirements and launch the game from the repository root:
 
