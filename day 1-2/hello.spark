@@ -1,0 +1,14 @@
+# A tiny program in the Spark language.
+let name = "Jayden"
+let score = 2 + 3 * 4
+
+say "Welcome to Spark, " + name
+say score
+
+if score > 10:
+    say "That score is bright."
+end
+
+repeat 3:
+    say "Spark!"
+end
