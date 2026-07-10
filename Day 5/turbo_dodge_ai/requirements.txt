@@ -1,0 +1,12 @@
+# Core game
+numpy>=1.26
+pygame>=2.5
+
+# Reinforcement-learning environment and training
+gymnasium>=0.29
+stable-baselines3>=2.3
+torch>=2.2
+
+# Reports and verification
+matplotlib>=3.8
+pytest>=8.0

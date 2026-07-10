@@ -203,6 +203,11 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# Turbo Dodge AI generated models, metrics, and local Python repair attempts
+Day 5/turbo_dodge_ai/artifacts/
+py312/
+.turbo_test_env/
+
 # Ruff stuff:
 .ruff_cache/
 
